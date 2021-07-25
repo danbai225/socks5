@@ -4,10 +4,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"log"
 	"net"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Server struct {
@@ -47,6 +47,7 @@ func (s *Server) newConn(conn net.Conn) {
 	}()
 	err2 := s.auth(conn)
 	if err2 != nil {
+		log.Println(err2)
 		return
 	}
 	bytes := make([]byte, 1024)
@@ -66,7 +67,7 @@ func (s *Server) newConn(conn net.Conn) {
 
 	switch cmd {
 	case Connect:
-		dial, err2 := net.DialTimeout("tcp", array, time.Second*10)
+		dial, err2 := net.Dial("tcp", array)
 		if err2 != nil {
 			return
 		}
@@ -105,6 +106,10 @@ func (s *Server) auth(conn net.Conn) error {
 		for _, b := range bytes[2:] {
 			if u == b {
 				moth = u
+				if moth == Zero {
+					conn.Write([]byte{Version, Zero})
+					return nil
+				}
 				break
 			}
 		}
