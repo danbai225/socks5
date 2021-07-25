@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"strconv"
@@ -75,6 +76,9 @@ func addressResolution(host string) (uint8, []byte, error) {
 	if strings.Contains(host, ":") {
 		Type = IPV6
 		//ipv6 地址转16位uint
+		if strings.Contains(host, "[") {
+			host = host[1 : len(host)-1]
+		}
 		split := strings.Split(host, ":")
 		for _, s := range split {
 			if s == "" {
@@ -179,6 +183,17 @@ func (u *UdpProxy) Write(bytes []byte) (n int, err error) {
 	}
 	return len(data), nil
 }
+func (u *UdpProxy) SpecifyWrite(host string, port uint16, bytes []byte) (n int, err error) {
+	data, err := u.addHead(host, port, bytes)
+	if err != nil {
+		return 0, err
+	}
+	_, err = u.conn.Write(data)
+	if err != nil {
+		return 0, err
+	}
+	return len(data), nil
+}
 func (u *UdpProxy) Read(bytes []byte) (host string, port uint16, n int, err error) {
 	l, err := u.conn.Read(bytes)
 	if err != nil {
@@ -231,4 +246,12 @@ func (u UdpProxy) addHead(host string, port uint16, bytes []byte) ([]byte, error
 	data = append(data, portToBytes(port)...)
 	data = append(data, bytes...)
 	return data, nil
+}
+func ioCopy(conn1 net.Conn, conn2 net.Conn) {
+	defer func() {
+		conn1.Close()
+		conn2.Close()
+	}()
+	go io.Copy(conn1, conn2)
+	io.Copy(conn2, conn1)
 }

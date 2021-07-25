@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Client struct {
@@ -172,6 +173,20 @@ func (c *Client) GetHttpProxyClient() *http.Client {
 		return c.TcpProxy(split[0], uint16(port))
 	}
 	return &http.Client{Transport: httpTransport}
+}
+func (c *Client) GetHttpProxyClientSpecify(transport *http.Transport, jar http.CookieJar, CheckRedirect func(req *http.Request, via []*http.Request) error, Timeout time.Duration) *http.Client {
+	transport.DialContext = func(ctx context.Context, network, addr string) (net.Conn, error) {
+		split := strings.Split(addr, ":")
+		if len(split) < 2 {
+			return c.TcpProxy(split[0], 80)
+		}
+		port, err := strconv.Atoi(split[1])
+		if err != nil {
+			return nil, err
+		}
+		return c.TcpProxy(split[0], uint16(port))
+	}
+	return &http.Client{Transport: transport, Jar: jar, CheckRedirect: CheckRedirect, Timeout: Timeout}
 }
 func (c *Client) UdpProxy(host string, port uint16) (*UdpProxy, error) {
 	conn, err := c.conn()
