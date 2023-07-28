@@ -20,14 +20,14 @@ type User struct {
 	Password []byte
 }
 type Config struct {
-	host      string
-	port      uint16
+	Host      string
+	Port      uint16
 	BlackList []string
 	AuthList  []uint8
 }
 
 func (s *Server) Start() (err error) {
-	s.listen, err = net.Listen("tcp", fmt.Sprintf("%s:%d", s.Config.host, s.Config.port))
+	s.listen, err = net.Listen("tcp", fmt.Sprintf("%s:%d", s.Config.Host, s.Config.Port))
 	if err != nil {
 		return err
 	}
